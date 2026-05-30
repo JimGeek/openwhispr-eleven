@@ -21,15 +21,12 @@ const MACOS_AX_ENABLE_SCRIPT = (pid) =>
   `\tend try\n` +
   `end tell`;
 
-// AppleScript that reads the character immediately before the cursor in the
-// focused text field. Output protocol:
-//   "OK:X"   — preceding char is X (single character, may be multibyte)
-//   "START:" — cursor is at position 0 / field is empty (no preceding char)
-//   ""       — unknown (no focused element, no range support, AX read failed)
-//
-// Caller uses "unknown" as the signal to fall back to append-mode spacing.
-// AppleScript's `character N` is 1-indexed, AXSelectedTextRange.location is
-// 0-indexed, so the char at 0-indexed offset (loc-1) is `character loc` here.
+// Returns the character before the cursor for smart-spacing. Output protocol:
+//   "OK:X"   — preceding char is X
+//   "START:" — cursor at field start, no preceding char
+//   ""       — unknown / read failed (caller falls back to append-mode spacing)
+// AppleScript `character N` is 1-indexed; AXSelectedTextRange.location is
+// 0-indexed, so the char at offset (loc-1) is `character loc`.
 const MACOS_AX_PRECEDING_CHAR_SCRIPT = (pid) =>
   `tell application "System Events"\n` +
   `\tset targetProc to first application process whose unix id is ${pid}\n` +
@@ -139,17 +136,10 @@ class TextEditMonitor extends EventEmitter {
   }
 
   /**
-   * macOS: read the character immediately before the cursor in the focused
-   * text field. Used by paste-time smart spacing to decide whether to
-   * prepend a space. Tight 400ms timeout to avoid stalling the paste.
-   *
-   * Resolves to one of:
-   *   { state: "ok", char: string }   — preceding char available
-   *   { state: "start" }              — cursor at field start (no leading space)
-   *   { state: "unknown" }            — couldn't read (non-mac, no PID, no AX
-   *                                     access, query timed out, no focused
-   *                                     text element). Caller should fall back
-   *                                     to append-mode spacing.
+   * macOS: read the char before the cursor in the focused text field, used by
+   * paste-time smart spacing. Resolves to { state: "ok", char } | { state:
+   * "start" } | { state: "unknown" }. Tight timeout so paste latency is
+   * unaffected; on "unknown" the caller falls back to append-mode spacing.
    */
   getPrecedingChar(pid, timeoutMs = 400) {
     return new Promise((resolve) => {
@@ -160,10 +150,6 @@ class TextEditMonitor extends EventEmitter {
       const script = MACOS_AX_PRECEDING_CHAR_SCRIPT(pid);
       execFile("osascript", ["-e", script], { timeout: timeoutMs }, (err, stdout) => {
         if (err) {
-          debugLogger.debug("[TextEditMonitor] getPrecedingChar failed", {
-            pid,
-            error: err.message,
-          });
           resolve({ state: "unknown" });
           return;
         }
@@ -173,14 +159,7 @@ class TextEditMonitor extends EventEmitter {
           return;
         }
         if (out.startsWith("OK:")) {
-          const char = out.slice(3);
-          // Defensive: AppleScript can occasionally return an empty char if
-          // the field contains a single newline/control. Treat as unknown.
-          if (char.length === 0) {
-            resolve({ state: "unknown" });
-            return;
-          }
-          resolve({ state: "ok", char });
+          resolve({ state: "ok", char: out.slice(3) });
           return;
         }
         resolve({ state: "unknown" });

@@ -61,21 +61,17 @@ test("prepend: no space when transcript starts with closing punctuation", () => 
   assert.equal(prepend(") close paren", "o"), ") close paren");
 });
 
-test("prepend: adds space even after sentence-ending punctuation if not whitespace", () => {
-  // "Hello." + "World" → "Hello. World" — preceding char is "." (no space yet),
-  // user expects a space.
+test("prepend: adds space when preceding char is sentence punctuation (no space yet)", () => {
   assert.equal(prepend("World", "."), " World");
   assert.equal(prepend("World", "!"), " World");
   assert.equal(prepend("World", "?"), " World");
 });
 
-test("prepend: adds space after period+space already in text? no — preceding is space", () => {
-  // If the field is "Hello. " (period then space), precedingChar is " ", no space.
+test("prepend: no space when preceding is whitespace, even after period+space sequence", () => {
   assert.equal(prepend("World", " "), "World");
 });
 
 test("prepend: handles unicode preceding chars", () => {
-  // Cyrillic letter — should still prepend a space.
   assert.equal(prepend("hello", "д"), " hello");
 });
 

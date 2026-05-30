@@ -1467,38 +1467,23 @@ class IPCHandlers {
         }
       }
 
-      // Smart spacing: insert a separator between previously-typed text and the
-      // new transcription so users don't have to dictate or type one manually
-      // (#856). macOS reads the preceding char via Accessibility; Windows/Linux
-      // (and macOS when the AX read fails) fall back to appending a trailing
-      // space — slightly less precise but works without an a11y bridge.
-      let textToPaste = text;
-      try {
-        if (typeof text === "string" && text.length > 0) {
-          let mode = "append";
-          let precedingChar;
-          if (process.platform === "darwin" && activated && this.textEditMonitor) {
-            const result = await this.textEditMonitor.getPrecedingChar(targetPid);
-            if (result.state === "ok") {
-              mode = "prepend";
-              precedingChar = result.char;
-            } else if (result.state === "start") {
-              mode = "prepend";
-              precedingChar = "";
-            }
-            debugLogger.debug("[SmartSpacing] Preceding-char read", {
-              targetPid,
-              state: result.state,
-              mode,
-            });
-          }
-          textToPaste = applySmartSpacing({ text, mode, precedingChar });
+      // Smart spacing (#856): macOS reads the preceding char via Accessibility
+      // and prepends a space when needed; Windows/Linux (and macOS when the
+      // read fails) append a trailing space instead — the next paste then
+      // sees a leading space and self-corrects.
+      let mode = "append";
+      let precedingChar;
+      if (process.platform === "darwin" && activated && this.textEditMonitor) {
+        const ax = await this.textEditMonitor.getPrecedingChar(targetPid);
+        if (ax.state === "ok") {
+          mode = "prepend";
+          precedingChar = ax.char;
+        } else if (ax.state === "start") {
+          mode = "prepend";
+          precedingChar = "";
         }
-      } catch (err) {
-        // Never let smart spacing break a paste — fall back to the raw text.
-        debugLogger.debug("[SmartSpacing] Failed, pasting raw", { error: err.message });
-        textToPaste = text;
       }
+      const textToPaste = applySmartSpacing({ text, mode, precedingChar });
 
       const result = await this.clipboardManager.pasteText(textToPaste, {
         ...options,
