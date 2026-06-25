@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "./button";
 import { cn } from "../lib/utils";
 import type { ColorScheme } from "../../utils/modelPickerStyles";
-import { createExternalLinkHandler } from "../../utils/externalLinks";
+import { createExternalLinkHandler, withUtm } from "../../utils/externalLinks";
 
 export interface ModelCardOption {
   value: string;
@@ -70,6 +70,7 @@ export function ModelCard({
   const isLocalMode = Boolean(onDownload);
   const isDownloaded = model.isDownloaded;
   const isDownloading = model.isDownloading;
+  const specHref = model.specUrl ? withUtm(model.specUrl, "model_spec") : undefined;
 
   const handleCardClick = () => {
     if (isLocalMode) {
@@ -146,10 +147,10 @@ export function ModelCard({
             {model.description}
           </span>
         )}
-        {model.specUrl && (
+        {specHref && (
           <a
-            href={model.specUrl}
-            onClick={createExternalLinkHandler(model.specUrl)}
+            href={specHref}
+            onClick={createExternalLinkHandler(specHref)}
             className="inline-flex items-center gap-0.5 text-xs text-primary/60 hover:text-primary transition-colors shrink-0"
           >
             {t("models.learnMore")}

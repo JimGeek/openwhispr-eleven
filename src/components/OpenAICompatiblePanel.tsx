@@ -7,6 +7,7 @@ import ModelCardList from "./ui/ModelCardList";
 import SearchableModelList, { MODEL_SEARCH_THRESHOLD } from "./ui/SearchableModelList";
 import { buildApiUrl, normalizeBaseUrl } from "../config/constants";
 import { isSecureEndpoint } from "../utils/urlUtils";
+import { GetApiKeyLink } from "./ui/GetApiKeyLink";
 
 interface ModelOption {
   value: string;
@@ -25,6 +26,9 @@ interface OpenAICompatiblePanelProps {
   defaultBaseUrl?: string;
   baseUrlPlaceholder?: string;
   helpExamples?: ReactNode;
+  // Hide the endpoint editor when the URL is fixed by the caller (e.g. OpenRouter).
+  lockedBaseUrl?: boolean;
+  getKeyUrl?: string;
 }
 
 export default function OpenAICompatiblePanel({
@@ -37,6 +41,8 @@ export default function OpenAICompatiblePanel({
   defaultBaseUrl,
   baseUrlPlaceholder = "https://api.openai.com/v1",
   helpExamples,
+  lockedBaseUrl = false,
+  getKeyUrl,
 }: OpenAICompatiblePanelProps) {
   const { t } = useTranslation();
   const [draftBase, setDraftBase] = useState(baseUrl);
@@ -240,26 +246,31 @@ export default function OpenAICompatiblePanel({
 
   return (
     <>
-      <div className="space-y-2">
-        <h4 className="font-medium text-foreground">{t("reasoning.custom.endpointTitle")}</h4>
-        <Input
-          value={draftBase}
-          onChange={(event) => setDraftBase(event.target.value)}
-          onBlur={handleBlur}
-          placeholder={baseUrlPlaceholder}
-          className="text-sm"
-        />
-        {helpExamples ?? (
-          <p className="text-xs text-muted-foreground">
-            {t("reasoning.custom.endpointExamples")}{" "}
-            <code className="text-primary">https://openrouter.ai/api/v1</code> (OpenRouter),{" "}
-            <code className="text-primary">https://api.together.xyz/v1</code> (Together).
-          </p>
-        )}
-      </div>
+      {!lockedBaseUrl && (
+        <div className="space-y-2">
+          <h4 className="font-medium text-foreground">{t("reasoning.custom.endpointTitle")}</h4>
+          <Input
+            value={draftBase}
+            onChange={(event) => setDraftBase(event.target.value)}
+            onBlur={handleBlur}
+            placeholder={baseUrlPlaceholder}
+            className="text-sm"
+          />
+          {helpExamples ?? (
+            <p className="text-xs text-muted-foreground">
+              {t("reasoning.custom.endpointExamples")}{" "}
+              <code className="text-primary">https://openrouter.ai/api/v1</code> (OpenRouter),{" "}
+              <code className="text-primary">https://api.together.xyz/v1</code> (Together).
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="space-y-2 pt-3">
-        <h4 className="font-medium text-foreground">{t("reasoning.custom.apiKeyOptional")}</h4>
+        <div className="flex items-baseline justify-between">
+          <h4 className="font-medium text-foreground">{t("reasoning.custom.apiKeyOptional")}</h4>
+          {getKeyUrl && <GetApiKeyLink url={getKeyUrl} />}
+        </div>
         <ApiKeyInput
           apiKey={apiKey}
           setApiKey={setApiKey}
