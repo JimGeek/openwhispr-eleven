@@ -28,10 +28,12 @@ import { detectAgentName } from "../config/agentDetection";
 import { resolveDictationRouteKind, resolveDictationAgentReachability } from "./dictationRouting";
 import { resolvePrompt } from "../config/prompts";
 import { syncService } from "../services/SyncService.js";
+import { evaluateFinishedRecording } from "./recordingValidation";
 import { matchesDictionaryPrompt } from "../utils/dictionaryEchoFilter.js";
 import { getDictionaryHintWords } from "../utils/snippets";
 
 const REASONING_CACHE_TTL = 30000; // 30 seconds
+const RECORDING_TIMESLICE_MS = 250; // flush chunks periodically so short recordings still carry audio frames. See #871.
 const REALTIME_MODELS = new Set(["gpt-4o-mini-transcribe", "gpt-4o-transcribe"]);
 
 function dictationAgentReachable(settings) {
@@ -402,6 +404,23 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
     }
   }
 
+  // Briefly acquire and release the mic so the OS audio driver is warm before
+  // the first real recording, reducing cold-start empty captures. See #871.
+  async warmupMicDriver() {
+    if (this.micDriverWarmedUp) return;
+    // Skip while a recording is active so we don't double-acquire the mic. See #871.
+    if (this.isRecording || this.isProcessing || this.mediaRecorder?.state === "recording") return;
+    try {
+      const constraints = await this.getAudioConstraints();
+      const tempStream = await navigator.mediaDevices.getUserMedia(constraints);
+      tempStream.getTracks().forEach((track) => track.stop());
+      this.micDriverWarmedUp = true;
+      logger.debug("Microphone driver pre-warmed", {}, "audio");
+    } catch (e) {
+      logger.debug("Mic driver warmup failed (non-critical)", { error: e.message }, "audio");
+    }
+  }
+
   async startRecording(forceDefaultMic = false) {
     try {
       if (this.isRecording || this.isProcessing || this.mediaRecorder?.state === "recording") {
@@ -463,11 +482,15 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
 
       this.mediaRecorder = new MediaRecorder(micStream);
       this.audioChunks = [];
+      this._receivedAudioData = false;
       this.recordingStartTime = Date.now();
       this.recordingMimeType = this.mediaRecorder.mimeType || "audio/webm";
 
       this.mediaRecorder.ondataavailable = (event) => {
-        this.audioChunks.push(event.data);
+        if (event.data && event.data.size > 0) {
+          this._receivedAudioData = true;
+          this.audioChunks.push(event.data);
+        }
       };
 
       this.mediaRecorder.onstop = async () => {
@@ -502,12 +525,36 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
           ? (Date.now() - this.recordingStartTime) / 1000
           : null;
         this.recordingStartTime = null;
+
+        // Drop header-only / no-frame recordings before they crash FFmpeg. See #871.
+        const recordingCheck = evaluateFinishedRecording({
+          blobSize: audioBlob.size,
+          receivedAudioData: this._receivedAudioData,
+        });
+        if (!recordingCheck.usable) {
+          logger.info(
+            "Dropping degenerate recording before transcription",
+            {
+              blobSize: audioBlob.size,
+              reason: recordingCheck.reason,
+              receivedAudioData: this._receivedAudioData,
+            },
+            "audio"
+          );
+          this.isProcessing = false;
+          this._localSpeechGateState = null;
+          this.onStateChange?.({ isRecording: false, isProcessing: false });
+          this.onTranscriptionComplete?.({ success: true, text: "" });
+          micStream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+
         await this.processAudio(audioBlob, { durationSeconds });
 
         micStream.getTracks().forEach((track) => track.stop());
       };
 
-      this.mediaRecorder.start();
+      this.mediaRecorder.start(RECORDING_TIMESLICE_MS);
       this.isRecording = true;
       this.onStateChange?.({ isRecording: true, isProcessing: false });
 
