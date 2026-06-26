@@ -13,6 +13,7 @@ import {
   UserPlus,
   X,
   Search,
+  PanelLeftClose,
 } from "lucide-react";
 import logoIcon from "../assets/icon.png";
 import { useTranslation } from "react-i18next";
@@ -51,6 +52,7 @@ interface ControlPanelSidebarProps {
   isProUser?: boolean;
   usageLoaded?: boolean;
   updateAction?: React.ReactNode;
+  onToggleCollapse?: () => void;
 }
 
 export default function ControlPanelSidebar({
@@ -69,6 +71,7 @@ export default function ControlPanelSidebar({
   isProUser,
   usageLoaded,
   updateAction,
+  onToggleCollapse,
 }: ControlPanelSidebarProps) {
   const { t } = useTranslation();
   const [upgradeDismissed, setUpgradeDismissed] = useState(
@@ -102,9 +105,23 @@ export default function ControlPanelSidebar({
   return (
     <div className="w-48 h-full shrink-0 border-r border-border/15 dark:border-white/6 flex flex-col bg-surface-1/60 dark:bg-surface-1">
       <div
-        className="w-full h-10 shrink-0"
+        className="w-full h-10 shrink-0 flex items-center justify-end px-2"
         style={{ WebkitAppRegion: "drag" } as React.CSSProperties}
-      />
+      >
+        {onToggleCollapse && (
+          <button
+            onClick={onToggleCollapse}
+            aria-label={t("sidebar.collapse")}
+            className="group flex items-center justify-center h-7 w-7 rounded-md outline-none hover:bg-foreground/5 dark:hover:bg-white/5 focus-visible:ring-1 focus-visible:ring-primary/30 transition-colors duration-150"
+            style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
+          >
+            <PanelLeftClose
+              size={15}
+              className="text-foreground/60 group-hover:text-foreground/75 dark:text-foreground/50 dark:group-hover:text-foreground/65 transition-colors duration-150"
+            />
+          </button>
+        )}
+      </div>
 
       {WORKSPACES_ENABLED && isSignedIn && (
         <div className="px-2 pt-1 pb-1">
