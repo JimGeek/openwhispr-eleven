@@ -79,9 +79,8 @@ function MainApp() {
     if (isControlPanel) {
       if (!resolved) {
         setShowOnboarding(true);
-      } else if (!isSignedIn && !authSkipped) {
-        setNeedsReauth(true);
       }
+      // Whispr (BYOK): no cloud account — never force re-authentication.
     }
 
     if (isDictationPanel && !resolved) {

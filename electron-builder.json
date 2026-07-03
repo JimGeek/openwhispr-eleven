@@ -1,9 +1,9 @@
 {
   "appId": "com.gizmolabs.openwhispr",
   "afterPack": "scripts/afterPack.js",
-  "productName": "OpenWhispr",
+  "productName": "Whispr",
   "protocols": {
-    "name": "OpenWhispr Protocol",
+    "name": "Whispr Protocol",
     "schemes": ["openwhispr"]
   },
   "directories": {
@@ -148,9 +148,9 @@
     "extendInfo": {
       "LSUIElement": false,
       "CFBundleIconName": "openwhispr",
-      "NSMicrophoneUsageDescription": "OpenWhispr uses the microphone to capture your voice for transcription.",
-      "NSAudioCaptureUsageDescription": "OpenWhispr uses system audio to capture other participants' audio from calls and meetings.",
-      "NSAccessibilityUsageDescription": "OpenWhispr needs accessibility permissions to paste transcribed text into other applications."
+      "NSMicrophoneUsageDescription": "Whispr uses the microphone to capture your voice for transcription.",
+      "NSAudioCaptureUsageDescription": "Whispr uses system audio to capture other participants' audio from calls and meetings.",
+      "NSAccessibilityUsageDescription": "Whispr needs accessibility permissions to paste transcribed text into other applications."
     }
   },
   "win": {

@@ -123,8 +123,9 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const cortiClientSecret = useSettingsStore((s) => s.cortiClientSecret);
 
   const [hotkey, setHotkey] = useState(dictationKey || getDefaultHotkey());
-  const [agentName, setAgentName] = useState("OpenWhispr");
-  const [skipAuth, setSkipAuth] = useState(false);
+  const [agentName, setAgentName] = useState("Whispr");
+  // Whispr is BYOK — no cloud account. Skip all auth in onboarding.
+  const [skipAuth, setSkipAuth] = useState(true);
   const [pendingVerificationEmail, setPendingVerificationEmail] = useState<string | null>(null);
   const [isModelDownloaded, setIsModelDownloaded] = useState(false);
   const { isUsingNativeShortcut, isUsingHyprland, hyprlandConfigStatus, supportsPushToTalk } =
@@ -184,11 +185,8 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const showMeetingStep = false;
 
   const steps = useMemo(() => {
-    const list = [
-      { id: "welcome", title: t("onboarding.steps.welcome"), icon: UserCircle },
-      { id: "usecase", title: t("onboarding.steps.useCase"), icon: Sparkles },
-      { id: "setup", title: t("onboarding.steps.setup"), icon: Settings },
-    ];
+    // Whispr (BYOK): no account (welcome/auth) or use-case survey steps.
+    const list = [{ id: "setup", title: t("onboarding.steps.setup"), icon: Settings }];
     if (!(isSignedIn && !skipAuth)) {
       list.push({ id: "permissions", title: t("onboarding.steps.permissions"), icon: Shield });
     }
