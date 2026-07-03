@@ -177,10 +177,32 @@ tag-input component** exists — copy the inline `customDictionary` tag pattern 
 
 ---
 
-## 6. ElevenLabs contract to verify at Phase 2 start
+## 6. ElevenLabs contract — VERIFIED against live docs (2026-07-03)
 
-SPEC §0.1 documents the Scribe v2 Realtime WS contract as "verified," but it should be re-confirmed
-against the live ElevenLabs API reference before writing `elevenRealtimeStreaming.js` (URL, `xi-api-key`
-header auth, `model_id=scribe_v2_realtime`, VAD query params, `input_audio_chunk` publish shape, and the
-`session_started`/`partial_transcript`/`committed_transcript`/`*_error` message discriminators). Build the
-Phase 2 CLI harness against a known WAV to prove auth+parsing before touching the UI.
+Source: https://elevenlabs.io/docs/api-reference/speech-to-text/v-1-speech-to-text-realtime
+
+**Confirmed matching SPEC §0.1:**
+- URL `wss://api.elevenlabs.io/v1/speech-to-text/realtime`; auth `xi-api-key` header (or `token` query for
+  client-side). `model_id=scribe_v2_realtime`.
+- `audio_format` default `pcm_16000`; enum `pcm_8000|pcm_16000|pcm_22050|pcm_24000|pcm_44100|pcm_48000|ulaw_8000`.
+- `commit_strategy` enum `manual|vad` (default `manual`; **we use `vad`**).
+- Defaults: `vad_silence_threshold_secs`=1.5, `vad_threshold`=0.4, `min_speech_duration_ms`=100,
+  `min_silence_duration_ms`=100, `no_verbatim`=false, `include_timestamps`=false,
+  `include_language_detection`=false, `enable_logging`=true. `keyterms`=array of strings.
+- Client→server: `{ message_type:"input_audio_chunk", audio_base_64, commit, sample_rate, previous_text? }`
+  (`previous_text` first chunk only).
+- Server→client: `session_started`, `partial_transcript`(`text`), `committed_transcript`(`text`),
+  `committed_transcript_with_timestamps`(`text`,`language_code`,`words`).
+
+**⚠️ CORRECTION vs SPEC §6.3/§6.4 — error event names (must fix in Phase 2):**
+Live docs list error `message_type` values **without** a `scribe_` prefix, and **several do NOT end in
+`_error`**:
+`error, auth_error, quota_exceeded, commit_throttled, unaccepted_terms, rate_limited, queue_overflow,
+resource_exhausted, session_time_limit_exceeded, input_error, chunk_size_exceeded,
+insufficient_audio_activity, transcriber_error`.
+→ SPEC §6.3's `msg.message_type?.endsWith('_error')` dispatch would **miss** `quota_exceeded`,
+`commit_throttled`, `unaccepted_terms`, `rate_limited`, `queue_overflow`, `resource_exhausted`,
+`session_time_limit_exceeded`, `insufficient_audio_activity`, `chunk_size_exceeded`. **Use an explicit
+error-type Set** (built from the list above) for dispatch, not a suffix test. Re-confirm exact values from a
+live `session_started`/error frame in the Phase 2 CLI harness (a summarized doc fetch may have normalized
+names). Keep the §6.4 user-message mapping but re-key it to these verified type strings.
