@@ -10,6 +10,10 @@ const debugLogger = require("./debugLogger");
 // format the renderer's AudioWorklet already emits, so no resampling is needed.
 
 const SAMPLE_RATE = 16000;
+// audio_format enum from the ElevenLabs realtime API. Dictation uses 16 kHz (the
+// renderer worklet's native rate); meetings capture at 24 kHz (see ipcHandlers
+// MEETING_STREAM_SAMPLE_RATE), so the rate must be configurable per session.
+const SUPPORTED_PCM_RATES = new Set([8000, 16000, 22050, 24000, 44100, 48000]);
 const MODEL_ID = "scribe_v2_realtime";
 const WEBSOCKET_TIMEOUT_MS = 15000;
 const FLUSH_TIMEOUT_MS = 2000;
@@ -90,6 +94,7 @@ class ElevenRealtimeStreaming {
     this.coldStartBufferSize = 0;
     this.audioBytesSent = 0;
 
+    this.sampleRate = SAMPLE_RATE;
     this.currentModel = MODEL_ID;
   }
 
@@ -106,9 +111,10 @@ class ElevenRealtimeStreaming {
    * @returns {string} the full wss:// URL with query params.
    */
   buildWebSocketUrl(options = {}) {
+    const rate = SUPPORTED_PCM_RATES.has(options.sampleRate) ? options.sampleRate : SAMPLE_RATE;
     const params = new URLSearchParams({
       model_id: MODEL_ID,
-      audio_format: "pcm_16000",
+      audio_format: `pcm_${rate}`,
       commit_strategy: options.commitStrategy || "vad",
       vad_silence_threshold_secs: String(options.vadSilenceThresholdSecs ?? 1.2),
       vad_threshold: String(options.vadThreshold ?? 0.4),
@@ -153,6 +159,9 @@ class ElevenRealtimeStreaming {
     }
 
     this.isConnecting = true;
+    this.sampleRate = SUPPORTED_PCM_RATES.has(options.sampleRate)
+      ? options.sampleRate
+      : SAMPLE_RATE;
     this.finalSegments = [];
     this.currentPartial = "";
     this.coldStartBuffer = [];
@@ -341,7 +350,7 @@ class ElevenRealtimeStreaming {
         message_type: "input_audio_chunk",
         audio_base_64: audioBase64,
         commit,
-        sample_rate: SAMPLE_RATE,
+        sample_rate: this.sampleRate,
       })
     );
     if (pcmBuffer) this.audioBytesSent += pcmBuffer.length;

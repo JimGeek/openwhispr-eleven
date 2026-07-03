@@ -51,6 +51,7 @@ const STREAMING_CLIENT_BY_PROVIDER = {
   "assemblyai-realtime": AssemblyAiStreaming,
   "deepgram-realtime": DeepgramStreaming,
   "corti-realtime": CortiStreaming,
+  "elevenlabs-realtime": ElevenRealtimeStreaming,
 };
 const ALLOWED_MEETING_PROVIDERS = new Set([
   "local",
@@ -58,6 +59,7 @@ const ALLOWED_MEETING_PROVIDERS = new Set([
   "assemblyai-realtime",
   "deepgram-realtime",
   "corti-realtime",
+  "elevenlabs-realtime",
 ]);
 
 // Meeting capture runs at 24 kHz (see meetingRecordingStore AudioContext); cloud
@@ -4444,6 +4446,16 @@ class IPCHandlers {
         });
       }
 
+      if (options.provider === "elevenlabs-realtime") {
+        // BYOK only (Whispr) — the user's own xi-api-key covers both meeting streams.
+        const apiKey = this.environmentManager.getElevenLabsKey();
+        if (!apiKey) {
+          const err = new Error("No ElevenLabs API key configured. Add your key in Settings.");
+          err.code = "NO_API";
+          throw err;
+        }
+        return streams === 2 ? [apiKey, apiKey] : apiKey;
+      }
       if (options.provider === "corti-realtime") {
         // One token covers both meeting streams; it's only used at the WSS handshake.
         const { token } = await this._mintStoredCortiToken(options);

@@ -139,6 +139,18 @@ const getMeetingTranscriptionOptions = () => {
     };
   }
 
+  // ElevenLabs Scribe v2 Realtime (BYOK) — like Corti, streams over its own WSS and is
+  // not in the server-driven catalog, so resolve it explicitly.
+  if (resolved.cloudTranscriptionMode === "byok" && selectedProvider === "elevenlabs") {
+    return {
+      provider: "elevenlabs-realtime" as const,
+      model: "scribe_v2_realtime",
+      mode: "byok" as const,
+      language,
+      keyterms: (state.customDictionary ?? []).filter(Boolean),
+    };
+  }
+
   const catalog = useStreamingProvidersStore.getState().providers;
   const provider =
     catalog?.find((p) => p.id === resolved.cloudTranscriptionProvider) ?? catalog?.[0];
