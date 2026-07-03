@@ -1663,7 +1663,9 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
   }
 
   getKeyterms() {
-    return this.getCustomDictionaryArray();
+    // Custom-dictionary words PLUS snippet triggers, so spoken triggers transcribe
+    // accurately and reliably expand (matches the batch-path hint list).
+    return getDictionaryHintWords(getSettings());
   }
 
   async processWithOpenAIAPI(audioBlob, metadata = {}) {

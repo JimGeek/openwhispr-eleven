@@ -121,8 +121,18 @@ class ElevenRealtimeStreaming {
     if (lang) params.set("language_code", lang);
 
     if (Array.isArray(options.keyterms)) {
-      for (const term of options.keyterms) {
-        if (term) params.append("keyterms", term);
+      // ElevenLabs limits: max 50 keyterms, 20 chars each (+20% cost). Dedupe, filter,
+      // and cap so an over-long dictionary/snippet list can't break the request.
+      const seen = new Set();
+      let count = 0;
+      for (const raw of options.keyterms) {
+        const term = String(raw || "").trim();
+        if (!term || term.length > 20) continue;
+        const key = term.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        params.append("keyterms", term);
+        if (++count >= 50) break;
       }
     }
 
