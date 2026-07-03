@@ -224,7 +224,7 @@ interface TranscriptionSectionProps {
 }
 
 // Providers that forward the live-preview flag (see STREAMING_PROVIDERS in audioManager.js).
-const CLOUD_PREVIEW_PROVIDERS = new Set(["tinfoil"]);
+const CLOUD_PREVIEW_PROVIDERS = new Set(["tinfoil", "elevenlabs"]);
 
 function TranscriptionSection({
   isSignedIn,
