@@ -68,6 +68,7 @@ export interface ApiKeySettings {
   cortiClientId: string;
   cortiClientSecret: string;
   tinfoilApiKey: string;
+  elevenLabsApiKey: string;
   customTranscriptionApiKey: string;
   cleanupCustomApiKey: string;
 }
@@ -245,6 +246,7 @@ function useSettingsInternal() {
     xaiApiKey: store.xaiApiKey,
     mistralApiKey: store.mistralApiKey,
     tinfoilApiKey: store.tinfoilApiKey,
+    elevenLabsApiKey: store.elevenLabsApiKey,
     dictationKey: store.dictationKey,
     meetingKey: store.meetingKey,
     voiceAgentKey: store.voiceAgentKey,

@@ -205,6 +205,7 @@ const CLOUD_PROVIDER_TABS = [
   { id: "xai", name: "xAI" },
   { id: "mistral", name: "Mistral" },
   { id: "corti", name: "Corti" },
+  { id: "elevenlabs", name: "ElevenLabs" },
   { id: "tinfoil", name: "Tinfoil" },
   { id: "custom", name: "Custom" },
 ];
@@ -219,7 +220,8 @@ interface ProviderCredentialField {
     | "cortiClientSecret"
     | "cortiEnvironment"
     | "cortiTenant"
-    | "tinfoilApiKey";
+    | "tinfoilApiKey"
+    | "elevenLabsApiKey";
   input: "secret" | "text" | "select";
   labelKey?: string;
   placeholder?: string;
@@ -271,6 +273,10 @@ const PROVIDER_CREDENTIALS: Record<
   tinfoil: {
     consoleUrl: "https://tinfoil.sh/inference?utm_source=referral&utm_campaign=openwhispr",
     fields: [{ key: "tinfoilApiKey", input: "secret" }],
+  },
+  elevenlabs: {
+    consoleUrl: "https://elevenlabs.io/app/settings/api-keys",
+    fields: [{ key: "elevenLabsApiKey", input: "secret" }],
   },
 };
 
@@ -354,6 +360,8 @@ export default function TranscriptionModelPicker({
   const setCortiTenant = useSettingsStore((s) => s.setCortiTenant);
   const tinfoilApiKey = useSettingsStore((s) => s.tinfoilApiKey);
   const setTinfoilApiKey = useSettingsStore((s) => s.setTinfoilApiKey);
+  const elevenLabsApiKey = useSettingsStore((s) => s.elevenLabsApiKey);
+  const setElevenLabsApiKey = useSettingsStore((s) => s.setElevenLabsApiKey);
   const customTranscriptionApiKey = useSettingsStore((s) => s.customTranscriptionApiKey);
   const setCustomTranscriptionApiKey = useSettingsStore((s) => s.setCustomTranscriptionApiKey);
   const effectiveLocal = mode === "local" ? true : mode === "cloud" ? false : useLocalWhisper;
@@ -723,6 +731,7 @@ export default function TranscriptionModelPicker({
     cortiEnvironment,
     cortiTenant,
     tinfoilApiKey,
+    elevenLabsApiKey,
   };
   const credentialSetters: Record<ProviderCredentialField["key"], (value: string) => void> = {
     openaiApiKey: setOpenaiApiKey,
@@ -734,6 +743,7 @@ export default function TranscriptionModelPicker({
     cortiEnvironment: setCortiEnvironment,
     cortiTenant: setCortiTenant,
     tinfoilApiKey: setTinfoilApiKey,
+    elevenLabsApiKey: setElevenLabsApiKey,
   };
 
   const cloudModelOptions = useMemo(() => {

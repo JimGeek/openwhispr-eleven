@@ -220,6 +220,20 @@
       ]
     },
     {
+      "id": "elevenlabs",
+      "name": "ElevenLabs",
+      "baseUrl": "https://api.elevenlabs.io/v1",
+      "models": [
+        {
+          "id": "scribe_v2_realtime",
+          "name": "Scribe v2 Realtime",
+          "description": "Real-time streaming speech-to-text, 90+ languages, ~150ms latency",
+          "descriptionKey": "models.descriptions.transcription.elevenlabs_scribe_v2_realtime",
+          "streaming": true
+        }
+      ]
+    },
+    {
       "id": "tinfoil",
       "name": "Tinfoil",
       "baseUrl": "https://inference.tinfoil.sh/v1",

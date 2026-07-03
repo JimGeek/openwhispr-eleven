@@ -570,6 +570,7 @@ export interface SettingsState
   setCortiClientId: (key: string) => void;
   setCortiClientSecret: (key: string) => void;
   setTinfoilApiKey: (key: string) => void;
+  setElevenLabsApiKey: (key: string) => void;
   setCustomTranscriptionApiKey: (key: string) => void;
   setCleanupCustomApiKey: (key: string) => void;
 
@@ -762,6 +763,7 @@ const SECRET_IPC_SAVERS = {
   cortiClientId: "saveCortiClientId",
   cortiClientSecret: "saveCortiClientSecret",
   tinfoil: "saveTinfoilKey",
+  elevenlabs: "saveElevenLabsKey",
   customTranscription: "saveCustomTranscriptionKey",
   cleanupCustom: "saveCleanupCustomKey",
   bedrockAccessKeyId: "saveBedrockAccessKeyId",
@@ -803,6 +805,7 @@ const STALE_SECRET_LOCALSTORAGE_KEYS = [
   "cortiClientId",
   "cortiClientSecret",
   "tinfoilApiKey",
+  "elevenLabsApiKey",
   "customTranscriptionApiKey",
   "customReasoningApiKey",
   "cleanupCustomApiKey",
@@ -884,6 +887,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   cortiClientId: "",
   cortiClientSecret: "",
   tinfoilApiKey: "",
+  elevenLabsApiKey: "",
   customTranscriptionApiKey: "",
   cleanupCustomApiKey: "",
 
@@ -1329,6 +1333,11 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     debouncedSaveSecret("tinfoil", key);
     invalidateApiKeyCaches("tinfoil");
   },
+  setElevenLabsApiKey: (key: string) => {
+    set({ elevenLabsApiKey: key });
+    debouncedSaveSecret("elevenlabs", key);
+    invalidateApiKeyCaches();
+  },
   setCustomTranscriptionApiKey: (key: string) => {
     set({ customTranscriptionApiKey: key });
     debouncedSaveSecret("customTranscription", key);
@@ -1718,6 +1727,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     if (keys.cortiClientId !== undefined) s.setCortiClientId(keys.cortiClientId);
     if (keys.cortiClientSecret !== undefined) s.setCortiClientSecret(keys.cortiClientSecret);
     if (keys.tinfoilApiKey !== undefined) s.setTinfoilApiKey(keys.tinfoilApiKey);
+    if (keys.elevenLabsApiKey !== undefined) s.setElevenLabsApiKey(keys.elevenLabsApiKey);
     if (keys.customTranscriptionApiKey !== undefined)
       s.setCustomTranscriptionApiKey(keys.customTranscriptionApiKey);
     if (keys.cleanupCustomApiKey !== undefined) s.setCleanupCustomApiKey(keys.cleanupCustomApiKey);
@@ -1967,6 +1977,7 @@ export async function initializeSettings(): Promise<void> {
         cortiClientId,
         cortiClientSecret,
         tinfoil,
+        elevenlabs,
         customTx,
         customRx,
         bedrockAccessKeyId,
@@ -1984,6 +1995,7 @@ export async function initializeSettings(): Promise<void> {
         window.electronAPI.getCortiClientId?.(),
         window.electronAPI.getCortiClientSecret?.(),
         window.electronAPI.getTinfoilKey?.(),
+        window.electronAPI.getElevenLabsKey?.(),
         window.electronAPI.getCustomTranscriptionKey?.(),
         window.electronAPI.getCleanupCustomKey?.(),
         window.electronAPI.getBedrockAccessKeyId?.(),
@@ -2003,6 +2015,7 @@ export async function initializeSettings(): Promise<void> {
         cortiClientId: cortiClientId || "",
         cortiClientSecret: cortiClientSecret || "",
         tinfoilApiKey: tinfoil || "",
+        elevenLabsApiKey: elevenlabs || "",
         customTranscriptionApiKey: customTx || "",
         cleanupCustomApiKey: customRx || "",
         bedrockAccessKeyId: bedrockAccessKeyId || "",

@@ -1036,6 +1036,8 @@ declare global {
       }) => Promise<{ text: string }>;
       getTinfoilKey?: () => Promise<string | null>;
       saveTinfoilKey?: (key: string) => Promise<void>;
+      getElevenLabsKey?: () => Promise<string | null>;
+      saveElevenLabsKey?: (key: string) => Promise<void>;
 
       // Custom endpoint API keys
       getCustomTranscriptionKey?: () => Promise<string | null>;
@@ -1536,6 +1538,36 @@ declare global {
       onCortiFinalTranscript?: (callback: (text: string) => void) => () => void;
       onCortiError?: (callback: (error: string) => void) => () => void;
       onCortiSessionEnd?: (callback: (data: { text?: string }) => void) => () => void;
+
+      // ElevenLabs Scribe v2 Realtime streaming (BYOK)
+      elevenLabsStreamingWarmup?: (options?: {
+        language?: string;
+        keyterms?: string[];
+      }) => Promise<{ success: boolean; error?: string; code?: string }>;
+      elevenLabsStreamingStart?: (options?: {
+        language?: string;
+        commitStrategy?: string;
+        vadSilenceThresholdSecs?: number;
+        vadThreshold?: number;
+        minSpeechDurationMs?: number;
+        minSilenceDurationMs?: number;
+        noVerbatim?: boolean;
+        keyterms?: string[];
+      }) => Promise<{ success: boolean; error?: string; code?: string }>;
+      elevenLabsStreamingSend?: (audioBuffer: ArrayBuffer) => void;
+      elevenLabsStreamingFinalize?: () => void;
+      elevenLabsStreamingStop?: () => Promise<{
+        success: boolean;
+        text?: string;
+        model?: string;
+        audioBytesSent?: number;
+        error?: string;
+      }>;
+      elevenLabsStreamingStatus?: () => Promise<{ isConnected: boolean; sessionId: string | null }>;
+      onElevenLabsPartialTranscript?: (callback: (text: string) => void) => () => void;
+      onElevenLabsFinalTranscript?: (callback: (text: string) => void) => () => void;
+      onElevenLabsError?: (callback: (error: string) => void) => () => void;
+      onElevenLabsSessionEnd?: (callback: (data: { text?: string }) => void) => () => void;
 
       // Agent overlay
       resizeAgentWindow?: (width: number, height: number) => Promise<void>;

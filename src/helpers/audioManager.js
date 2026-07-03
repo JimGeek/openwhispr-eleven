@@ -2464,6 +2464,12 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
       return !!model?.streaming && !!s.tinfoilApiKey;
     }
 
+    // ElevenLabs Scribe v2 Realtime streams over its own WSS (BYOK), independent
+    // of OpenWhispr Cloud.
+    if (s.cloudTranscriptionProvider === "elevenlabs") {
+      return !!s.elevenLabsApiKey;
+    }
+
     // For dictation/agent: respect sttConfig mode from the API — this allows
     // batch mode even for realtime-capable models (e.g. gpt-4o-mini-transcribe).
     if (this.context !== "notes" && this.sttConfig?.dictation?.mode === "batch") {
