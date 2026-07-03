@@ -152,7 +152,11 @@ const STREAMING_PROVIDERS = {
   },
   elevenlabs: {
     warmup: (opts) => window.electronAPI.elevenLabsStreamingWarmup(opts),
-    start: (opts) => window.electronAPI.elevenLabsStreamingStart(opts),
+    start: (opts) =>
+      window.electronAPI.elevenLabsStreamingStart({
+        ...opts,
+        preview: getSettings().showTranscriptionPreview,
+      }),
     send: (buf) => window.electronAPI.elevenLabsStreamingSend(buf),
     finalize: () => window.electronAPI.elevenLabsStreamingFinalize(),
     stop: () => window.electronAPI.elevenLabsStreamingStop(),

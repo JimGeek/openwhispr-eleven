@@ -340,6 +340,7 @@ class IPCHandlers {
     this.deepgramStreaming = null;
     this.cortiStreaming = null;
     this.elevenLabsStreaming = null;
+    this._elevenLabsPreviewEnabled = false;
     this._dictationStreaming = null;
     this._dictationConnectPromise = null;
     this._dictationIdleTimer = null;
@@ -7523,17 +7524,24 @@ class IPCHandlers {
         }
 
         const win = BrowserWindow.fromWebContents(event.sender);
+        const previewEnabled = !!options.preview;
+        this._elevenLabsPreviewEnabled = previewEnabled;
         this.elevenLabsStreaming.onPartialTranscript = (text) => {
           if (win && !win.isDestroyed()) win.webContents.send("elevenlabs-partial-transcript", text);
+          // Live floating preview overlay (mirrors the realtime-dictation path).
+          if (previewEnabled && text) this.windowManager.showTranscriptionPreview(text);
         };
         this.elevenLabsStreaming.onFinalTranscript = (text) => {
           if (win && !win.isDestroyed()) win.webContents.send("elevenlabs-final-transcript", text);
+          if (previewEnabled && text) this.windowManager.showTranscriptionPreview(text);
         };
         this.elevenLabsStreaming.onError = (error) => {
           if (win && !win.isDestroyed()) win.webContents.send("elevenlabs-error", error.message);
+          if (previewEnabled) this.windowManager.hideTranscriptionPreview();
         };
         this.elevenLabsStreaming.onSessionEnd = (data) => {
           if (win && !win.isDestroyed()) win.webContents.send("elevenlabs-session-end", data);
+          if (previewEnabled) this.windowManager.hideTranscriptionPreview();
         };
 
         await this.elevenLabsStreaming.connect({
@@ -7569,6 +7577,15 @@ class IPCHandlers {
         let result = { text: "" };
         if (this.elevenLabsStreaming) {
           result = await this.elevenLabsStreaming.disconnect();
+        }
+        // Complete the floating preview overlay (show final, then auto-hide) or hide it.
+        if (this._elevenLabsPreviewEnabled) {
+          if (result?.text) {
+            this.windowManager.completeTranscriptionPreview(result.text);
+          } else {
+            this.windowManager.hideTranscriptionPreview();
+          }
+          this._elevenLabsPreviewEnabled = false;
         }
         return { success: true, text: result?.text || "", model, audioBytesSent };
       } catch (error) {
