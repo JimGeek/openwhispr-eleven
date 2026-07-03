@@ -778,15 +778,10 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
           activeModel = whisperModel;
           result = await this.processWithLocalWhisper(audioBlob, whisperModel, metadata);
         }
-      } else if (isOpenWhisprCloudMode) {
-        if (!isSignedIn) {
-          const err = new Error(
-            "OpenWhispr Cloud requires sign-in. Please sign in again or switch to BYOK mode."
-          );
-          err.code = "AUTH_REQUIRED";
-          err.messageKey = "hooks.audioRecording.errorDescriptions.sessionExpired";
-          throw err;
-        }
+      } else if (useCloud) {
+        // OpenWhispr Cloud (account-based) — unreachable in Whispr since isSignedIn is
+        // forced false; kept for revert. A persisted "openwhispr" mode now falls through
+        // to BYOK below instead of throwing AUTH_REQUIRED.
         activeModel = "openwhispr-cloud";
         result = await this.processWithOpenWhisprCloud(audioBlob, metadata);
       } else {

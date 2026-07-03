@@ -855,7 +855,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   ),
   // Secrets aren't hydrated yet at construction; the BYOK default is set
   // post-hydration in initializeSettings.
-  cloudTranscriptionMode: readString("cloudTranscriptionMode", "openwhispr"),
+  cloudTranscriptionMode: readString("cloudTranscriptionMode", "byok"),
   cleanupCloudMode: readString("cleanupCloudMode", "openwhispr"),
   cleanupCloudBaseUrl: readString("cleanupCloudBaseUrl", API_ENDPOINTS.OPENAI_BASE),
   cortiEnvironment: readString("cortiEnvironment", "us"),
@@ -997,9 +997,9 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   isSignedIn: readBoolean("isSignedIn", false),
 
   transcriptionMode: (() => {
-    const v = readString("transcriptionMode", "openwhispr");
+    const v = readString("transcriptionMode", "providers");
     if (v === "openwhispr" || v === "providers" || v === "local" || v === "self-hosted") return v;
-    return "openwhispr" as InferenceMode;
+    return "providers" as InferenceMode;
   })(),
   remoteTranscriptionType: (() => {
     const v = readString("remoteTranscriptionType", "lan");

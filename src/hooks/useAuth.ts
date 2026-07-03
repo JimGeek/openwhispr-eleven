@@ -17,9 +17,12 @@ export function useAuth() {
   const rawIsSignedIn = Boolean(user);
   const gracePeriodActive = isWithinGracePeriod();
 
-  // Only sync true to the store — signOut() handles setting false via localStorage + reload.
-  // Better Auth's useSession() flickers in Electron (renderer can't see the main-process cookie until reload).
-  const isSignedIn = rawIsSignedIn || gracePeriodActive;
+  // Whispr is a local BYOK app — no cloud account. Force signed-out so all account /
+  // usage / referral / plans UI collapses to the logged-out branch and transcription
+  // always uses the user's own API keys. (Auth code kept intact for easy revert.)
+  const isSignedIn = false;
+  void rawIsSignedIn;
+  void gracePeriodActive;
 
   const lastSyncedRef = useRef(false);
 

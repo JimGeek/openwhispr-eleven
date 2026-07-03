@@ -256,26 +256,13 @@ function TranscriptionSection({
 }: TranscriptionSectionProps) {
   const { t } = useTranslation();
 
+  // Whispr (cloud-BYOK): OpenWhispr Cloud (account) and Local (offline models) modes removed.
   const transcriptionModes: InferenceModeOption[] = [
-    {
-      id: "openwhispr",
-      label: t("settingsPage.transcription.modes.openwhispr"),
-      description: t("settingsPage.transcription.modes.openwhisprDesc"),
-      icon: <Cloud className="w-4 h-4" />,
-      disabled: !isSignedIn,
-      badge: !isSignedIn ? t("common.freeAccountRequired") : undefined,
-    },
     {
       id: "providers",
       label: t("settingsPage.transcription.modes.providers"),
       description: t("settingsPage.transcription.modes.providersDesc"),
       icon: <Key className="w-4 h-4" />,
-    },
-    {
-      id: "local",
-      label: t("settingsPage.transcription.modes.local"),
-      description: t("settingsPage.transcription.modes.localDesc"),
-      icon: <Cpu className="w-4 h-4" />,
     },
     {
       id: "self-hosted",
@@ -286,10 +273,6 @@ function TranscriptionSection({
   ];
 
   const handleTranscriptionModeSelect = (mode: InferenceMode) => {
-    if (mode === "openwhispr" && !isSignedIn) {
-      startOnboarding();
-      return;
-    }
     if (mode === transcriptionMode) return;
     setTranscriptionMode(mode);
     setUseLocalWhisper(mode === "local");
