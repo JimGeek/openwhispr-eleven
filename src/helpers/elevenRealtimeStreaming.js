@@ -150,6 +150,37 @@ class ElevenRealtimeStreaming {
    * @param {object} options must include `apiKey`.
    */
   async connect(options = {}) {
+    // Retry on transient/concurrency failures (ElevenLabs 429 rate-limit: a previous
+    // session may still be freeing its concurrency slot). Exponential backoff, bounded.
+    // Does NOT retry auth/quota errors. See SPEC §6.5.
+    const maxAttempts = 3;
+    let lastErr;
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      try {
+        return await this._connectOnce(options);
+      } catch (err) {
+        lastErr = err;
+        const msg = String((err && err.message) || "");
+        const transient =
+          (err && (err.retry || err.rotate)) ||
+          /rate.?limit|throttl|429|closed before ready|timeout|queue_overflow|resource_exhausted|transcriber_error/i.test(
+            msg
+          );
+        const fatal = err && (err.fatal || err.kind === "auth_error");
+        if (fatal || !transient || attempt === maxAttempts - 1) throw err;
+        const backoffMs = Math.min(300 * 2 ** attempt, 2000);
+        debugLogger.warn("Eleven realtime connect retry (transient)", {
+          attempt: attempt + 1,
+          backoffMs,
+          reason: msg,
+        });
+        await new Promise((r) => setTimeout(r, backoffMs));
+      }
+    }
+    throw lastErr;
+  }
+
+  async _connectOnce(options = {}) {
     const { apiKey } = options;
     if (!apiKey) throw new Error("ElevenLabs API key is required");
 
@@ -313,6 +344,28 @@ class ElevenRealtimeStreaming {
     error.retry = !!info.retry;
     error.rotate = !!info.rotate;
     error.soft = !!info.soft;
+
+    // Soft notices (e.g. no speech detected) don't end the session.
+    if (info.soft) {
+      this.onError?.(error);
+      return;
+    }
+
+    // If the error arrives before the session is ready, reject the pending connect
+    // so connect()'s retry/backoff can react (esp. rate-limit / concurrency) instead
+    // of hanging until the connection timeout.
+    if (this.isConnecting && this.pendingReject) {
+      clearTimeout(this.connectionTimeout);
+      this.connectionTimeout = null;
+      const reject = this.pendingReject;
+      this.pendingReject = null;
+      this.pendingResolve = null;
+      this.isConnecting = false;
+      this.cleanup();
+      reject(error);
+      return;
+    }
+
     this.onError?.(error);
   }
 
