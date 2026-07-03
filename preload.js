@@ -381,6 +381,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   proxyCortiTranscription: (data) => ipcRenderer.invoke("proxy-corti-transcription", data),
   getTinfoilKey: () => ipcRenderer.invoke("get-tinfoil-key"),
   saveTinfoilKey: (key) => ipcRenderer.invoke("save-tinfoil-key", key),
+  getElevenLabsKey: () => ipcRenderer.invoke("get-elevenlabs-key"),
+  saveElevenLabsKey: (key) => ipcRenderer.invoke("save-elevenlabs-key", key),
 
   // Custom endpoint API keys
   getCustomTranscriptionKey: () => ipcRenderer.invoke("get-custom-transcription-key"),
@@ -590,6 +592,32 @@ contextBridge.exposeInMainWorld("electronAPI", {
   onCortiError: registerListener("corti-error", (callback) => (_event, error) => callback(error)),
   onCortiSessionEnd: registerListener(
     "corti-session-end",
+    (callback) => (_event, data) => callback(data)
+  ),
+
+  // ElevenLabs Scribe v2 Realtime streaming (BYOK)
+  elevenLabsStreamingWarmup: (options) =>
+    ipcRenderer.invoke("elevenlabs-streaming-warmup", options),
+  elevenLabsStreamingStart: (options) => ipcRenderer.invoke("elevenlabs-streaming-start", options),
+  elevenLabsStreamingSend: (audioBuffer) =>
+    ipcRenderer.send("elevenlabs-streaming-send", audioBuffer),
+  elevenLabsStreamingFinalize: () => ipcRenderer.send("elevenlabs-streaming-finalize"),
+  elevenLabsStreamingStop: () => ipcRenderer.invoke("elevenlabs-streaming-stop"),
+  elevenLabsStreamingStatus: () => ipcRenderer.invoke("elevenlabs-streaming-status"),
+  onElevenLabsPartialTranscript: registerListener(
+    "elevenlabs-partial-transcript",
+    (callback) => (_event, text) => callback(text)
+  ),
+  onElevenLabsFinalTranscript: registerListener(
+    "elevenlabs-final-transcript",
+    (callback) => (_event, text) => callback(text)
+  ),
+  onElevenLabsError: registerListener(
+    "elevenlabs-error",
+    (callback) => (_event, error) => callback(error)
+  ),
+  onElevenLabsSessionEnd: registerListener(
+    "elevenlabs-session-end",
     (callback) => (_event, data) => callback(data)
   ),
 

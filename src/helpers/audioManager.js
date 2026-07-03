@@ -150,6 +150,18 @@ const STREAMING_PROVIDERS = {
     onError: (cb) => window.electronAPI.onDictationRealtimeError(cb),
     onSessionEnd: (cb) => window.electronAPI.onDictationRealtimeSessionEnd(cb),
   },
+  elevenlabs: {
+    warmup: (opts) => window.electronAPI.elevenLabsStreamingWarmup(opts),
+    start: (opts) => window.electronAPI.elevenLabsStreamingStart(opts),
+    send: (buf) => window.electronAPI.elevenLabsStreamingSend(buf),
+    finalize: () => window.electronAPI.elevenLabsStreamingFinalize(),
+    stop: () => window.electronAPI.elevenLabsStreamingStop(),
+    status: () => window.electronAPI.elevenLabsStreamingStatus(),
+    onPartial: (cb) => window.electronAPI.onElevenLabsPartialTranscript(cb),
+    onFinal: (cb) => window.electronAPI.onElevenLabsFinalTranscript(cb),
+    onError: (cb) => window.electronAPI.onElevenLabsError(cb),
+    onSessionEnd: (cb) => window.electronAPI.onElevenLabsSessionEnd(cb),
+  },
   corti: {
     warmup: (opts) => window.electronAPI.cortiStreamingWarmup(opts),
     start: (opts) => window.electronAPI.cortiStreamingStart(opts),
@@ -338,6 +350,9 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
     }
     if (s.cloudTranscriptionProvider === "corti" && s.cloudTranscriptionMode === "byok") {
       return "corti";
+    }
+    if (s.cloudTranscriptionProvider === "elevenlabs") {
+      return "elevenlabs";
     }
     if (REALTIME_MODELS.has(s.cloudTranscriptionModel)) {
       return "openai-realtime";

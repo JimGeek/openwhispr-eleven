@@ -13,6 +13,7 @@ const { i18nMain, changeLanguage } = require("./i18nMain");
 const DeepgramStreaming = require("./deepgramStreaming");
 const CortiStreaming = require("./cortiStreaming");
 const OpenAIRealtimeStreaming = require("./openaiRealtimeStreaming");
+const ElevenRealtimeStreaming = require("./elevenRealtimeStreaming");
 const { getCortiToken } = require("./cortiAuth");
 const { createTinfoilRealtimeSocket } = require("./tinfoilSecureClient");
 const AudioStorageManager = require("./audioStorage");
@@ -338,6 +339,7 @@ class IPCHandlers {
     this.assemblyAiStreaming = null;
     this.deepgramStreaming = null;
     this.cortiStreaming = null;
+    this.elevenLabsStreaming = null;
     this._dictationStreaming = null;
     this._dictationConnectPromise = null;
     this._dictationIdleTimer = null;
@@ -2754,6 +2756,14 @@ class IPCHandlers {
 
     ipcMain.handle("save-tinfoil-key", async (event, key) => {
       return this.environmentManager.saveTinfoilKey(key);
+    });
+
+    ipcMain.handle("get-elevenlabs-key", async () => {
+      return this.environmentManager.getElevenLabsKey();
+    });
+
+    ipcMain.handle("save-elevenlabs-key", async (event, key) => {
+      return this.environmentManager.saveElevenLabsKey(key);
     });
 
     ipcMain.handle("get-custom-transcription-key", async () => {
@@ -7479,6 +7489,99 @@ class IPCHandlers {
         return { isConnected: false, sessionId: null };
       }
       return this.cortiStreaming.getStatus();
+    });
+
+    // ── ElevenLabs Scribe v2 Realtime (BYOK streaming) ──
+    // Auth is the user's own xi-api-key from the keychain (no token proxy), so these
+    // handlers are simpler than Deepgram/Corti. Mirrors the Corti BYOK structure.
+    const getElevenLabsKey = () =>
+      (this.environmentManager.getElevenLabsKey?.() || process.env.ELEVENLABS_API_KEY || "").trim();
+
+    ipcMain.handle("elevenlabs-streaming-warmup", async () => {
+      // BYOK: nothing to mint. Pre-instantiate so the first start is snappy.
+      try {
+        if (!this.elevenLabsStreaming) {
+          this.elevenLabsStreaming = new ElevenRealtimeStreaming();
+        }
+        return { success: true };
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    });
+
+    ipcMain.handle("elevenlabs-streaming-start", async (event, options = {}) => {
+      try {
+        const apiKey = getElevenLabsKey();
+        if (!apiKey) {
+          return { success: false, error: "ElevenLabs API key not set", code: "NO_KEY" };
+        }
+        if (!this.elevenLabsStreaming) {
+          this.elevenLabsStreaming = new ElevenRealtimeStreaming();
+        }
+        if (this.elevenLabsStreaming.isConnected) {
+          await this.elevenLabsStreaming.disconnect();
+        }
+
+        const win = BrowserWindow.fromWebContents(event.sender);
+        this.elevenLabsStreaming.onPartialTranscript = (text) => {
+          if (win && !win.isDestroyed()) win.webContents.send("elevenlabs-partial-transcript", text);
+        };
+        this.elevenLabsStreaming.onFinalTranscript = (text) => {
+          if (win && !win.isDestroyed()) win.webContents.send("elevenlabs-final-transcript", text);
+        };
+        this.elevenLabsStreaming.onError = (error) => {
+          if (win && !win.isDestroyed()) win.webContents.send("elevenlabs-error", error.message);
+        };
+        this.elevenLabsStreaming.onSessionEnd = (data) => {
+          if (win && !win.isDestroyed()) win.webContents.send("elevenlabs-session-end", data);
+        };
+
+        await this.elevenLabsStreaming.connect({
+          apiKey,
+          language: options.language,
+          commitStrategy: options.commitStrategy,
+          vadSilenceThresholdSecs: options.vadSilenceThresholdSecs,
+          vadThreshold: options.vadThreshold,
+          minSpeechDurationMs: options.minSpeechDurationMs,
+          minSilenceDurationMs: options.minSilenceDurationMs,
+          noVerbatim: options.noVerbatim,
+          keyterms: options.keyterms,
+        });
+        return { success: true };
+      } catch (error) {
+        debugLogger.error("ElevenLabs streaming start error", { error: error.message }, "streaming");
+        return { success: false, error: error.message, code: error.kind };
+      }
+    });
+
+    ipcMain.on("elevenlabs-streaming-send", (_event, audioBuffer) => {
+      this.elevenLabsStreaming?.sendAudio(Buffer.from(audioBuffer));
+    });
+
+    ipcMain.on("elevenlabs-streaming-finalize", () => {
+      this.elevenLabsStreaming?.finalize();
+    });
+
+    ipcMain.handle("elevenlabs-streaming-stop", async () => {
+      try {
+        const model = this.elevenLabsStreaming?.currentModel || "scribe_v2_realtime";
+        const audioBytesSent = this.elevenLabsStreaming?.audioBytesSent || 0;
+        let result = { text: "" };
+        if (this.elevenLabsStreaming) {
+          result = await this.elevenLabsStreaming.disconnect();
+        }
+        return { success: true, text: result?.text || "", model, audioBytesSent };
+      } catch (error) {
+        debugLogger.error("ElevenLabs streaming stop error", { error: error.message }, "streaming");
+        return { success: false, error: error.message };
+      }
+    });
+
+    ipcMain.handle("elevenlabs-streaming-status", async () => {
+      if (!this.elevenLabsStreaming) {
+        return { isConnected: false, sessionId: null };
+      }
+      return this.elevenLabsStreaming.getStatus();
     });
 
     // Agent mode handlers

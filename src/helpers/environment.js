@@ -16,6 +16,7 @@ const SECRET_KEYS = [
   "TINFOIL_API_KEY",
   "ASSEMBLYAI_API_KEY",
   "DEEPGRAM_API_KEY",
+  "ELEVENLABS_API_KEY",
   "CORTI_CLIENT_ID",
   "CORTI_CLIENT_SECRET",
   "CUSTOM_TRANSCRIPTION_API_KEY",
@@ -336,6 +337,14 @@ class EnvironmentManager {
 
   saveDeepgramKey(key) {
     return this._saveKey("DEEPGRAM_API_KEY", key);
+  }
+
+  getElevenLabsKey() {
+    return this._getKey("ELEVENLABS_API_KEY");
+  }
+
+  saveElevenLabsKey(key) {
+    return this._saveKey("ELEVENLABS_API_KEY", key);
   }
 
   getCortiClientId() {

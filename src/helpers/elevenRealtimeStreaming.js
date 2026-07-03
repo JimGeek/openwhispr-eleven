@@ -409,9 +409,19 @@ class ElevenRealtimeStreaming {
     return result;
   }
 
+  /**
+   * Force-commit the current buffer immediately (e.g. on push-to-talk release in
+   * manual mode). In VAD mode the server auto-commits; this just flushes early.
+   */
+  finalize() {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this._sendChunk(Buffer.alloc(0), true);
+    }
+  }
+
   getStatus() {
     return {
-      connected: this.isConnected,
+      isConnected: this.isConnected,
       connecting: this.isConnecting,
       sessionId: this.sessionId,
       segments: this.finalSegments.length,
