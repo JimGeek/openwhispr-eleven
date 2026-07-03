@@ -1,0 +1,131 @@
+name: Whispr Build (unsigned)
+
+# Builds unsigned Whispr binaries for macOS Intel (x64), macOS Apple Silicon (arm64),
+# and Windows (x64), and uploads them as workflow artifacts. No code signing / no
+# notarization / no publishing. Modeled on release.yml but slimmed for the lean
+# BYOK Whispr fork (local Whisper/Parakeet/llama/Qdrant downloads removed).
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/whispr-slim-rebrand
+
+permissions:
+  contents: read
+
+jobs:
+  build-macos:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-13 # real Intel runner -> native x64 modules (fixes the Intel gap)
+            arch: x64
+          - os: macos-14 # Apple Silicon runner -> native arm64 modules
+            arch: arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install ffmpeg-static for target architecture
+        if: matrix.arch == 'x64'
+        run: |
+          rm -f node_modules/ffmpeg-static/ffmpeg
+          npm_config_arch=x64 node node_modules/ffmpeg-static/install.js
+
+      - name: Compile macOS native helpers (${{ matrix.arch }})
+        run: |
+          npm run compile:globe -- --arch ${{ matrix.arch }}
+          npm run compile:fast-paste -- --arch ${{ matrix.arch }}
+          npm run compile:media-remote -- --arch ${{ matrix.arch }}
+          npm run compile:audio-tap -- --arch ${{ matrix.arch }}
+          npm run compile:mic-listener -- --arch ${{ matrix.arch }}
+          npm run compile:text-monitor -- --arch ${{ matrix.arch }}
+
+      - name: Download meeting AEC helper
+        run: node scripts/download-meeting-aec-helper.js --current --platform darwin --arch ${{ matrix.arch }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create empty runtime env (satisfies extraResources)
+        run: touch .env
+
+      - name: Build renderer
+        run: npm run build:renderer
+
+      - name: Package unsigned .dmg (${{ matrix.arch }})
+        run: npx electron-builder --mac dmg --${{ matrix.arch }} --config electron-builder.unsigned-mac.json
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - name: Ad-hoc sign app inside output (stable TCC identity)
+        run: |
+          APP=$(find dist -maxdepth 3 -name "Whispr.app" | head -n1)
+          if [ -n "$APP" ]; then codesign --force --deep --sign - "$APP" || true; fi
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Whispr-macos-${{ matrix.arch }}
+          path: |
+            dist/*.dmg
+          if-no-files-found: error
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install platform-specific bundler natives
+        run: npm install @rollup/rollup-win32-x64-msvc lightningcss-win32-x64-msvc @tailwindcss/oxide-win32-x64-msvc --no-save
+
+      - name: Download Windows helper binaries
+        shell: bash
+        run: |
+          node scripts/download-nircmd.js
+          node scripts/download-windows-fast-paste.js
+          node scripts/download-windows-key-listener.js
+          node scripts/download-windows-mic-listener.js
+          node scripts/download-windows-system-audio-helper.js
+          node scripts/download-meeting-aec-helper.js --current
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create empty runtime env (satisfies extraResources)
+        shell: bash
+        run: touch .env
+
+      - name: Build renderer
+        run: npm run build:renderer
+
+      - name: Package unsigned .exe (nsis)
+        run: npx electron-builder --win nsis --x64 --config electron-builder.unsigned-win.json
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Whispr-windows-x64
+          path: |
+            dist/*.exe
+          if-no-files-found: error
