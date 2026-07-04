@@ -9,6 +9,7 @@ on:
   workflow_dispatch:
   push:
     branches:
+      - main
       - feat/whispr-slim-rebrand
 
 permissions:
