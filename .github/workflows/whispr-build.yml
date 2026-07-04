@@ -20,10 +20,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-13 # real Intel runner -> native x64 modules (fixes the Intel gap)
-            arch: x64
           - os: macos-14 # Apple Silicon runner -> native arm64 modules
             arch: arm64
+          - os: macos-14 # Intel x64 cross-compiled here (GitHub retired macos-13 Intel runners)
+            arch: x64
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -42,6 +42,15 @@ jobs:
         run: |
           rm -f node_modules/ffmpeg-static/ffmpeg
           npm_config_arch=x64 node node_modules/ffmpeg-static/install.js
+
+      - name: Prepare x64 native modules (cross-compile on Apple Silicon)
+        if: matrix.arch == 'x64'
+        run: |
+          # @napi-rs/keyring ships per-platform prebuilds; npm only installed the arm64
+          # one on this runner, so add the x64 package for the cross-compiled bundle.
+          npm install @napi-rs/keyring-darwin-x64 --no-save --force
+          # Rebuild node-gyp native deps (better-sqlite3, onnxruntime-node) for x64.
+          npx electron-builder install-app-deps --arch x64
 
       - name: Compile macOS native helpers (${{ matrix.arch }})
         run: |
