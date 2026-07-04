@@ -64,7 +64,7 @@ jobs:
         run: npm run build:renderer
 
       - name: Package unsigned .dmg (${{ matrix.arch }})
-        run: npx electron-builder --mac dmg --${{ matrix.arch }} --config electron-builder.unsigned-mac.json
+        run: npx electron-builder --mac dmg --${{ matrix.arch }} --publish never --config electron-builder.unsigned-mac.json
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
 
@@ -118,7 +118,7 @@ jobs:
         run: npm run build:renderer
 
       - name: Package unsigned .exe (nsis)
-        run: npx electron-builder --win nsis --x64 --config electron-builder.unsigned-win.json
+        run: npx electron-builder --win nsis --x64 --publish never --config electron-builder.unsigned-win.json
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
 
