@@ -820,21 +820,33 @@ class WindowManager {
 
     if (!this.transcriptionPreviewWindow || this.transcriptionPreviewWindow.isDestroyed()) return;
 
-    const mainBounds =
-      this.mainWindow && !this.mainWindow.isDestroyed() ? this.mainWindow.getBounds() : null;
+    // Only reset position/size to the default on the FIRST show. Streaming providers
+    // call this on every partial; re-applying the default (small) bounds each time
+    // fought the renderer's content-fit resize and clipped long live transcripts.
+    // On subsequent updates just push the text and let resizeTranscriptionPreview
+    // (driven by the overlay's ResizeObserver) grow the window up to maxHeight.
+    const alreadyVisible = this.transcriptionPreviewWindow.isVisible();
 
-    if (mainBounds) {
-      const display = screen.getDisplayNearestPoint({ x: mainBounds.x, y: mainBounds.y });
-      const position = WindowPositionUtil.getTranscriptionPreviewPosition(display, mainBounds, {
-        width: TRANSCRIPTION_PREVIEW_CONFIG.width,
-        height: TRANSCRIPTION_PREVIEW_CONFIG.height,
-      });
-      this.transcriptionPreviewWindow.setBounds(position);
+    if (!alreadyVisible) {
+      const mainBounds =
+        this.mainWindow && !this.mainWindow.isDestroyed() ? this.mainWindow.getBounds() : null;
+
+      if (mainBounds) {
+        const display = screen.getDisplayNearestPoint({ x: mainBounds.x, y: mainBounds.y });
+        const position = WindowPositionUtil.getTranscriptionPreviewPosition(display, mainBounds, {
+          width: TRANSCRIPTION_PREVIEW_CONFIG.width,
+          height: TRANSCRIPTION_PREVIEW_CONFIG.height,
+        });
+        this.transcriptionPreviewWindow.setBounds(position);
+      }
     }
 
     this.transcriptionPreviewWindow.webContents.send("preview-text", text);
-    this.transcriptionPreviewWindow.showInactive();
-    WindowPositionUtil.setupAlwaysOnTop(this.transcriptionPreviewWindow);
+
+    if (!alreadyVisible) {
+      this.transcriptionPreviewWindow.showInactive();
+      WindowPositionUtil.setupAlwaysOnTop(this.transcriptionPreviewWindow);
+    }
   }
 
   appendTranscriptionPreview(text) {

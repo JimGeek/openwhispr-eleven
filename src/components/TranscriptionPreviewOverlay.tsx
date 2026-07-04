@@ -314,7 +314,7 @@ export default function TranscriptionPreviewOverlay() {
             <div
               ref={textRef}
               className={[
-                "preview-text-scroll rounded-lg border px-2.5 py-2 max-h-[220px] overflow-y-auto",
+                "preview-text-scroll rounded-lg border px-2.5 py-2 max-h-[360px] overflow-y-auto",
                 phase === "final"
                   ? "border-emerald-500/10 bg-emerald-500/[0.03]"
                   : phase === "cleanup"

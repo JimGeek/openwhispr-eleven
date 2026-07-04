@@ -446,7 +446,12 @@ class ElevenRealtimeStreaming {
     }
 
     if (this.ws.readyState === WebSocket.OPEN) {
-      if (this.audioBytesSent > 0) {
+      // Only force a final commit when there's an uncommitted in-progress segment
+      // (a pending partial). VAD already commits completed utterances on silence;
+      // committing on trailing SILENCE makes Scribe hallucinate a phantom word
+      // (commonly "yes"/"you"/"thank you"), so we skip the flush in that case.
+      const hasPendingSpeech = !!(this.currentPartial && this.currentPartial.trim());
+      if (hasPendingSpeech) {
         const prevOnFinal = this.onFinalTranscript;
         await new Promise((resolve) => {
           const tid = setTimeout(() => {
@@ -458,7 +463,7 @@ class ElevenRealtimeStreaming {
             this.onFinalTranscript = prevOnFinal;
             resolve();
           };
-          // One final commit to flush trailing buffered audio.
+          // One final commit to flush the pending (already-spoken) segment.
           this.onFinalTranscript = (text, ts) => {
             prevOnFinal?.(text, ts);
             done();
