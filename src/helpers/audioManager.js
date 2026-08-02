@@ -1135,6 +1135,18 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
         err.code = "API_KEY_MISSING";
         throw err;
       }
+    } else if (provider === "openrouter") {
+      apiKey = s.openRouterApiKey;
+      if (!apiKey?.trim()) {
+        apiKey = await window.electronAPI.getOpenRouterKey?.();
+      }
+      if (!apiKey?.trim()) {
+        const err = new Error(
+          "OpenRouter API key not found. Please set your API key in the Control Panel."
+        );
+        err.code = "API_KEY_MISSING";
+        throw err;
+      }
     } else {
       // Default to OpenAI
       // Prefer store value (user-entered via UI) over main process (.env)
@@ -1831,6 +1843,36 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
         }
 
         throw new Error("No text transcribed - xAI response was empty");
+      }
+
+      // OpenRouter batch STT (OpenAI-compatible /audio/transcriptions, e.g. xAI Grok STT)
+      // — proxy through main process to avoid renderer CORS.
+      if (provider === "openrouter" && window.electronAPI?.proxyOpenRouterTranscription) {
+        const audioBuffer = await optimizedAudio.arrayBuffer();
+        const proxyData = {
+          audioBuffer,
+          model,
+          language: language !== "auto" ? language : undefined,
+        };
+
+        const result = await window.electronAPI.proxyOpenRouterTranscription(proxyData);
+        const proxyText = result?.text;
+
+        if (proxyText && proxyText.trim().length > 0) {
+          if (this.isDictionaryEcho(proxyText)) {
+            throw new Error("No audio detected");
+          }
+          timings.transcriptionProcessingDurationMs = Math.round(performance.now() - apiCallStart);
+          const rawText = proxyText;
+          const reasoningStart = performance.now();
+          const text = await this.processTranscription(proxyText, "openrouter");
+          timings.reasoningProcessingDurationMs = Math.round(performance.now() - reasoningStart);
+
+          const source = (await this.isReasoningAvailable()) ? "openrouter-reasoned" : "openrouter";
+          return { success: true, text, rawText, source, timings };
+        }
+
+        throw new Error("No text transcribed - OpenRouter response was empty");
       }
 
       // Corti uses OAuth client credentials and an interaction-based REST flow — proxy through main process

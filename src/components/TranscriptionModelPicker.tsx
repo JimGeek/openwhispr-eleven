@@ -206,6 +206,7 @@ const CLOUD_PROVIDER_TABS = [
   { id: "mistral", name: "Mistral" },
   { id: "corti", name: "Corti" },
   { id: "elevenlabs", name: "ElevenLabs" },
+  { id: "openrouter", name: "OpenRouter" },
   { id: "tinfoil", name: "Tinfoil" },
   { id: "custom", name: "Custom" },
 ];
@@ -221,7 +222,8 @@ interface ProviderCredentialField {
     | "cortiEnvironment"
     | "cortiTenant"
     | "tinfoilApiKey"
-    | "elevenLabsApiKey";
+    | "elevenLabsApiKey"
+    | "openRouterApiKey";
   input: "secret" | "text" | "select";
   labelKey?: string;
   placeholder?: string;
@@ -277,6 +279,10 @@ const PROVIDER_CREDENTIALS: Record<
   elevenlabs: {
     consoleUrl: "https://elevenlabs.io/app/settings/api-keys",
     fields: [{ key: "elevenLabsApiKey", input: "secret" }],
+  },
+  openrouter: {
+    consoleUrl: "https://openrouter.ai/keys",
+    fields: [{ key: "openRouterApiKey", input: "secret" }],
   },
 };
 
@@ -362,6 +368,8 @@ export default function TranscriptionModelPicker({
   const setTinfoilApiKey = useSettingsStore((s) => s.setTinfoilApiKey);
   const elevenLabsApiKey = useSettingsStore((s) => s.elevenLabsApiKey);
   const setElevenLabsApiKey = useSettingsStore((s) => s.setElevenLabsApiKey);
+  const openRouterApiKey = useSettingsStore((s) => s.openRouterApiKey);
+  const setOpenRouterApiKey = useSettingsStore((s) => s.setOpenRouterApiKey);
   const customTranscriptionApiKey = useSettingsStore((s) => s.customTranscriptionApiKey);
   const setCustomTranscriptionApiKey = useSettingsStore((s) => s.setCustomTranscriptionApiKey);
   const effectiveLocal = mode === "local" ? true : mode === "cloud" ? false : useLocalWhisper;
@@ -732,6 +740,7 @@ export default function TranscriptionModelPicker({
     cortiTenant,
     tinfoilApiKey,
     elevenLabsApiKey,
+    openRouterApiKey,
   };
   const credentialSetters: Record<ProviderCredentialField["key"], (value: string) => void> = {
     openaiApiKey: setOpenaiApiKey,
@@ -744,6 +753,7 @@ export default function TranscriptionModelPicker({
     cortiTenant: setCortiTenant,
     tinfoilApiKey: setTinfoilApiKey,
     elevenLabsApiKey: setElevenLabsApiKey,
+    openRouterApiKey: setOpenRouterApiKey,
   };
 
   const cloudModelOptions = useMemo(() => {

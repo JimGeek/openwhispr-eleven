@@ -2769,6 +2769,47 @@ class IPCHandlers {
       return this.environmentManager.saveElevenLabsKey(key);
     });
 
+    ipcMain.handle("get-openrouter-key", async () => {
+      return this.environmentManager.getOpenRouterKey();
+    });
+
+    ipcMain.handle("save-openrouter-key", async (event, key) => {
+      return this.environmentManager.saveOpenRouterKey(key);
+    });
+
+    // OpenRouter batch transcription (OpenAI-compatible /audio/transcriptions).
+    // Proxied server-side to avoid renderer CORS. Used for xAI Grok STT via OpenRouter.
+    ipcMain.handle(
+      "proxy-openrouter-transcription",
+      async (event, { audioBuffer, model, language }) => {
+        const apiKey = this.environmentManager.getOpenRouterKey();
+        if (!apiKey) {
+          throw new Error("OpenRouter API key not configured");
+        }
+
+        const formData = new FormData();
+        const audioBlob = new Blob([Buffer.from(audioBuffer)], { type: "audio/webm" });
+        formData.append("file", audioBlob, "audio.webm");
+        formData.append("model", model || "x-ai/grok-stt-1.0");
+        if (language && language !== "auto") {
+          formData.append("language", language);
+        }
+
+        const response = await proxyFetch("https://openrouter.ai/api/v1/audio/transcriptions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${apiKey}` },
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`OpenRouter API Error: ${response.status} ${errorText}`);
+        }
+
+        return await response.json();
+      }
+    );
+
     ipcMain.handle("get-custom-transcription-key", async () => {
       return this.environmentManager.getCustomTranscriptionKey();
     });

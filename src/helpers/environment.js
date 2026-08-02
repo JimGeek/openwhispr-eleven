@@ -17,6 +17,7 @@ const SECRET_KEYS = [
   "ASSEMBLYAI_API_KEY",
   "DEEPGRAM_API_KEY",
   "ELEVENLABS_API_KEY",
+  "OPENROUTER_API_KEY",
   "CORTI_CLIENT_ID",
   "CORTI_CLIENT_SECRET",
   "CUSTOM_TRANSCRIPTION_API_KEY",
@@ -345,6 +346,14 @@ class EnvironmentManager {
 
   saveElevenLabsKey(key) {
     return this._saveKey("ELEVENLABS_API_KEY", key);
+  }
+
+  getOpenRouterKey() {
+    return this._getKey("OPENROUTER_API_KEY");
+  }
+
+  saveOpenRouterKey(key) {
+    return this._saveKey("OPENROUTER_API_KEY", key);
   }
 
   getCortiClientId() {

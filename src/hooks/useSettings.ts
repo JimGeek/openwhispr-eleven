@@ -69,6 +69,7 @@ export interface ApiKeySettings {
   cortiClientSecret: string;
   tinfoilApiKey: string;
   elevenLabsApiKey: string;
+  openRouterApiKey: string;
   customTranscriptionApiKey: string;
   cleanupCustomApiKey: string;
 }
@@ -247,6 +248,7 @@ function useSettingsInternal() {
     mistralApiKey: store.mistralApiKey,
     tinfoilApiKey: store.tinfoilApiKey,
     elevenLabsApiKey: store.elevenLabsApiKey,
+    openRouterApiKey: store.openRouterApiKey,
     dictationKey: store.dictationKey,
     meetingKey: store.meetingKey,
     voiceAgentKey: store.voiceAgentKey,

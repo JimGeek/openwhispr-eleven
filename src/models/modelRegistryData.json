@@ -234,6 +234,19 @@
       ]
     },
     {
+      "id": "openrouter",
+      "name": "OpenRouter",
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "models": [
+        {
+          "id": "x-ai/grok-stt-1.0",
+          "name": "xAI: Grok STT 1.0",
+          "description": "xAI Grok speech-to-text via OpenRouter (batch), 25 languages",
+          "descriptionKey": "models.descriptions.transcription.openrouter_grok_stt"
+        }
+      ]
+    },
+    {
       "id": "tinfoil",
       "name": "Tinfoil",
       "baseUrl": "https://inference.tinfoil.sh/v1",

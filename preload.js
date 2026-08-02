@@ -383,6 +383,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
   saveTinfoilKey: (key) => ipcRenderer.invoke("save-tinfoil-key", key),
   getElevenLabsKey: () => ipcRenderer.invoke("get-elevenlabs-key"),
   saveElevenLabsKey: (key) => ipcRenderer.invoke("save-elevenlabs-key", key),
+  getOpenRouterKey: () => ipcRenderer.invoke("get-openrouter-key"),
+  saveOpenRouterKey: (key) => ipcRenderer.invoke("save-openrouter-key", key),
+  proxyOpenRouterTranscription: (data) =>
+    ipcRenderer.invoke("proxy-openrouter-transcription", data),
 
   // Custom endpoint API keys
   getCustomTranscriptionKey: () => ipcRenderer.invoke("get-custom-transcription-key"),

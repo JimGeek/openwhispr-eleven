@@ -1038,6 +1038,13 @@ declare global {
       saveTinfoilKey?: (key: string) => Promise<void>;
       getElevenLabsKey?: () => Promise<string | null>;
       saveElevenLabsKey?: (key: string) => Promise<void>;
+      getOpenRouterKey?: () => Promise<string | null>;
+      saveOpenRouterKey?: (key: string) => Promise<void>;
+      proxyOpenRouterTranscription?: (data: {
+        audioBuffer: ArrayBuffer;
+        model?: string;
+        language?: string;
+      }) => Promise<{ text?: string }>;
 
       // Custom endpoint API keys
       getCustomTranscriptionKey?: () => Promise<string | null>;

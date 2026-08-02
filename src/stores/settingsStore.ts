@@ -571,6 +571,7 @@ export interface SettingsState
   setCortiClientSecret: (key: string) => void;
   setTinfoilApiKey: (key: string) => void;
   setElevenLabsApiKey: (key: string) => void;
+  setOpenRouterApiKey: (key: string) => void;
   setCustomTranscriptionApiKey: (key: string) => void;
   setCleanupCustomApiKey: (key: string) => void;
 
@@ -764,6 +765,7 @@ const SECRET_IPC_SAVERS = {
   cortiClientSecret: "saveCortiClientSecret",
   tinfoil: "saveTinfoilKey",
   elevenlabs: "saveElevenLabsKey",
+  openrouter: "saveOpenRouterKey",
   customTranscription: "saveCustomTranscriptionKey",
   cleanupCustom: "saveCleanupCustomKey",
   bedrockAccessKeyId: "saveBedrockAccessKeyId",
@@ -806,6 +808,7 @@ const STALE_SECRET_LOCALSTORAGE_KEYS = [
   "cortiClientSecret",
   "tinfoilApiKey",
   "elevenLabsApiKey",
+  "openRouterApiKey",
   "customTranscriptionApiKey",
   "customReasoningApiKey",
   "cleanupCustomApiKey",
@@ -888,6 +891,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   cortiClientSecret: "",
   tinfoilApiKey: "",
   elevenLabsApiKey: "",
+  openRouterApiKey: "",
   customTranscriptionApiKey: "",
   cleanupCustomApiKey: "",
 
@@ -1338,6 +1342,11 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     debouncedSaveSecret("elevenlabs", key);
     invalidateApiKeyCaches();
   },
+  setOpenRouterApiKey: (key: string) => {
+    set({ openRouterApiKey: key });
+    debouncedSaveSecret("openrouter", key);
+    invalidateApiKeyCaches();
+  },
   setCustomTranscriptionApiKey: (key: string) => {
     set({ customTranscriptionApiKey: key });
     debouncedSaveSecret("customTranscription", key);
@@ -1728,6 +1737,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     if (keys.cortiClientSecret !== undefined) s.setCortiClientSecret(keys.cortiClientSecret);
     if (keys.tinfoilApiKey !== undefined) s.setTinfoilApiKey(keys.tinfoilApiKey);
     if (keys.elevenLabsApiKey !== undefined) s.setElevenLabsApiKey(keys.elevenLabsApiKey);
+    if (keys.openRouterApiKey !== undefined) s.setOpenRouterApiKey(keys.openRouterApiKey);
     if (keys.customTranscriptionApiKey !== undefined)
       s.setCustomTranscriptionApiKey(keys.customTranscriptionApiKey);
     if (keys.cleanupCustomApiKey !== undefined) s.setCleanupCustomApiKey(keys.cleanupCustomApiKey);
@@ -1978,6 +1988,7 @@ export async function initializeSettings(): Promise<void> {
         cortiClientSecret,
         tinfoil,
         elevenlabs,
+        openrouter,
         customTx,
         customRx,
         bedrockAccessKeyId,
@@ -1996,6 +2007,7 @@ export async function initializeSettings(): Promise<void> {
         window.electronAPI.getCortiClientSecret?.(),
         window.electronAPI.getTinfoilKey?.(),
         window.electronAPI.getElevenLabsKey?.(),
+        window.electronAPI.getOpenRouterKey?.(),
         window.electronAPI.getCustomTranscriptionKey?.(),
         window.electronAPI.getCleanupCustomKey?.(),
         window.electronAPI.getBedrockAccessKeyId?.(),
@@ -2016,6 +2028,7 @@ export async function initializeSettings(): Promise<void> {
         cortiClientSecret: cortiClientSecret || "",
         tinfoilApiKey: tinfoil || "",
         elevenLabsApiKey: elevenlabs || "",
+        openRouterApiKey: openrouter || "",
         customTranscriptionApiKey: customTx || "",
         cleanupCustomApiKey: customRx || "",
         bedrockAccessKeyId: bedrockAccessKeyId || "",
