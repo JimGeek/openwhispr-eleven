@@ -1851,7 +1851,9 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
         const audioBuffer = await optimizedAudio.arrayBuffer();
         const proxyData = {
           audioBuffer,
-          model,
+          // OpenRouter routes by model id; a non-"vendor/model" id would be sent to the
+          // wrong backend (e.g. gpt-4o-mini-transcribe -> OpenAI). Force the Grok STT id.
+          model: model && model.includes("/") ? model : "x-ai/grok-stt-1.0",
           language: language !== "auto" ? language : undefined,
         };
 
@@ -2157,6 +2159,10 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
         if (provider === "corti" && isCortiModel) {
           return trimmedModel;
         }
+        // OpenRouter models use a "vendor/model" id (e.g. x-ai/grok-stt-1.0).
+        if (provider === "openrouter" && trimmedModel.includes("/")) {
+          return trimmedModel;
+        }
         // Model doesn't match provider - fall through to default
       }
 
@@ -2165,6 +2171,7 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
       if (provider === "xai") return "grok-stt";
       if (provider === "mistral") return "voxtral-mini-latest";
       if (provider === "corti") return "corti-transcribe";
+      if (provider === "openrouter") return "x-ai/grok-stt-1.0";
       return "gpt-4o-mini-transcribe";
     } catch (error) {
       return "gpt-4o-mini-transcribe";
