@@ -131,12 +131,6 @@
     "entitlementsInherit": "resources/mac/entitlements.mac.plist",
     "identity": "Gizmo Labs Inc. (T832773L2J)",
     "notarize": true,
-    "extraResources": [
-      {
-        "from": "src/assets/Assets.car",
-        "to": "Assets.car"
-      }
-    ],
     "extendInfo": {
       "LSUIElement": false,
       "CFBundleIconName": "openwhispr",
