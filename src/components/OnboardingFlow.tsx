@@ -121,6 +121,8 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
 
   const cortiClientId = useSettingsStore((s) => s.cortiClientId);
   const cortiClientSecret = useSettingsStore((s) => s.cortiClientSecret);
+  const elevenLabsApiKey = useSettingsStore((s) => s.elevenLabsApiKey);
+  const openRouterApiKey = useSettingsStore((s) => s.openRouterApiKey);
 
   const [hotkey, setHotkey] = useState(dictationKey || getDefaultHotkey());
   const [agentName, setAgentName] = useState("Whispr");
@@ -212,8 +214,13 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     }
   }, [currentStep, steps.length, setCurrentStep]);
 
-  // Only show progress for signed-up users after account creation step
-  const showProgress = currentStep > 0;
+  // Whispr drops the welcome/auth step, so step 0 may be a regular step that
+  // needs the footer (Next button) and progress bar.
+  const hasWelcomeStep = steps[0]?.id === "welcome";
+  const isWelcomeStep = currentStepId === "welcome";
+  const showProgress = !isWelcomeStep;
+  const progressSteps = hasWelcomeStep ? steps.slice(1) : steps;
+  const progressIndex = hasWelcomeStep ? currentStep - 1 : currentStep;
 
   useEffect(() => {
     if (isUsingNativeShortcut && !supportsPushToTalk) {
@@ -895,6 +902,10 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
             return cortiClientId.trim().length > 0 && cortiClientSecret.trim().length > 0;
           } else if (cloudTranscriptionProvider === "tinfoil") {
             return tinfoilApiKey.trim().length > 0;
+          } else if (cloudTranscriptionProvider === "elevenlabs") {
+            return elevenLabsApiKey.trim().length > 0;
+          } else if (cloudTranscriptionProvider === "openrouter") {
+            return openRouterApiKey.trim().length > 0;
           } else if (cloudTranscriptionProvider === "custom") {
             // Custom can work without API key for local endpoints
             return true;
@@ -968,7 +979,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
       />
 
       {/* Title Bar / drag region */}
-      {currentStep === 0 ? (
+      {isWelcomeStep ? (
         <div
           className="flex items-center justify-end w-full h-10 shrink-0"
           style={{ WebkitAppRegion: "drag" } as React.CSSProperties}
@@ -987,7 +998,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
             actions={isSignedIn ? <SupportDropdown /> : undefined}
             center={
               onboardingPlatform === "darwin" ? (
-                <StepProgress steps={steps.slice(1)} currentStep={currentStep - 1} />
+                <StepProgress steps={progressSteps} currentStep={progressIndex} />
               ) : undefined
             }
           ></TitleBar>
@@ -998,18 +1009,18 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
       {showProgress && onboardingPlatform !== "darwin" && (
         <div className="shrink-0 bg-background/80 backdrop-blur-2xl border-b border-white/5 px-6 md:px-12 py-3 z-10">
           <div className="max-w-3xl mx-auto">
-            <StepProgress steps={steps.slice(1)} currentStep={currentStep - 1} />
+            <StepProgress steps={progressSteps} currentStep={progressIndex} />
           </div>
         </div>
       )}
 
       {/* Content - This will grow to fill available space */}
       <div
-        className={`flex-1 px-6 md:px-12 overflow-y-auto ${currentStep === 0 ? "flex items-center" : "py-6"}`}
+        className={`flex-1 px-6 md:px-12 overflow-y-auto ${isWelcomeStep ? "flex items-center" : "py-6"}`}
       >
-        <div className={`w-full ${currentStep === 0 ? "max-w-sm" : "max-w-3xl"} mx-auto`}>
+        <div className={`w-full ${isWelcomeStep ? "max-w-sm" : "max-w-3xl"} mx-auto`}>
           <Card className="bg-card/90 backdrop-blur-2xl border border-border/50 dark:border-white/5 shadow-lg rounded-xl overflow-hidden">
-            <CardContent className={currentStep === 0 ? "p-6" : "p-6 md:p-8"}>
+            <CardContent className={isWelcomeStep ? "p-6" : "p-6 md:p-8"}>
               {renderStep()}
             </CardContent>
           </Card>
