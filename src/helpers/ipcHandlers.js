@@ -17,6 +17,7 @@ const ElevenRealtimeStreaming = require("./elevenRealtimeStreaming");
 const { getCortiToken } = require("./cortiAuth");
 const { createTinfoilRealtimeSocket } = require("./tinfoilSecureClient");
 const AudioStorageManager = require("./audioStorage");
+const { GrokSttResolver, transcribeWithFallback } = require("./grokStt");
 
 // Tinfoil's only realtime STT model — fallback when the renderer omits one.
 const TINFOIL_REALTIME_MODEL = "voxtral-mini-4b-realtime";
@@ -2787,26 +2788,36 @@ class IPCHandlers {
           throw new Error("OpenRouter API key not configured");
         }
 
-        const formData = new FormData();
-        const audioBlob = new Blob([Buffer.from(audioBuffer)], { type: "audio/webm" });
-        formData.append("file", audioBlob, "audio.webm");
-        formData.append("model", model || "x-ai/grok-stt-1.0");
-        if (language && language !== "auto") {
-          formData.append("language", language);
-        }
+        // Grok STT moves forward on OpenRouter (1.0 -> 2.0 -> ...). Use the newest one OpenRouter
+        // lists and fall back to the next if a model is gone, so dictation never stops (grokStt.js).
+        const audio = Buffer.from(audioBuffer);
+        const send = async (modelId) => {
+          const formData = new FormData();
+          formData.append("file", new Blob([audio], { type: "audio/webm" }), "audio.webm");
+          formData.append("model", modelId);
+          if (language && language !== "auto") {
+            formData.append("language", language);
+          }
+          const response = await proxyFetch("https://openrouter.ai/api/v1/audio/transcriptions", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${apiKey}` },
+            body: formData,
+          });
+          if (!response.ok) {
+            return { ok: false, status: response.status, text: await response.text() };
+          }
+          return { ok: true, status: response.status, json: await response.json() };
+        };
 
-        const response = await proxyFetch("https://openrouter.ai/api/v1/audio/transcriptions", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${apiKey}` },
-          body: formData,
+        this.grokSttResolver ??= new GrokSttResolver({ fetchFn: proxyFetch });
+        const { json, model: usedModel } = await transcribeWithFallback({
+          resolver: this.grokSttResolver,
+          requested: model,
+          send,
+          log: (message) => debugLogger.warn(message),
         });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`OpenRouter API Error: ${response.status} ${errorText}`);
-        }
-
-        return await response.json();
+        debugLogger.debug("OpenRouter transcription", { model: usedModel });
+        return json;
       }
     );
 

@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { API_ENDPOINTS } from "../config/constants";
 import i18n, { normalizeUiLanguage } from "../i18n";
 import { ensureAgentNameInDictionary } from "../utils/agentName";
+import { upgradeGrokSttModel } from "../utils/grokStt";
 import { useStreamingProvidersStore } from "./streamingProvidersStore";
 import logger from "../utils/logger";
 import whisperVadConstants from "../constants/whisperVad.json";
@@ -851,7 +852,9 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   fallbackWhisperModel: readString("fallbackWhisperModel", "base"),
   preferredLanguage: readString("preferredLanguage", "auto"),
   cloudTranscriptionProvider: readString("cloudTranscriptionProvider", "openai"),
-  cloudTranscriptionModel: readString("cloudTranscriptionModel", "gpt-4o-mini-transcribe"),
+  cloudTranscriptionModel: upgradeGrokSttModel(
+    readString("cloudTranscriptionModel", "gpt-4o-mini-transcribe")
+  ),
   cloudTranscriptionBaseUrl: readString(
     "cloudTranscriptionBaseUrl",
     API_ENDPOINTS.TRANSCRIPTION_BASE
@@ -1037,7 +1040,9 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     : "whisper") as LocalTranscriptionProvider,
   meetingParakeetModel: readString("meetingParakeetModel", ""),
   meetingCloudTranscriptionProvider: readString("meetingCloudTranscriptionProvider", ""),
-  meetingCloudTranscriptionModel: readString("meetingCloudTranscriptionModel", ""),
+  meetingCloudTranscriptionModel: upgradeGrokSttModel(
+    readString("meetingCloudTranscriptionModel", "")
+  ),
   meetingCloudTranscriptionBaseUrl: readString("meetingCloudTranscriptionBaseUrl", ""),
   meetingCloudTranscriptionMode: readString("meetingCloudTranscriptionMode", ""),
   meetingRemoteTranscriptionType: (() => {
@@ -1059,7 +1064,9 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     : "whisper") as LocalTranscriptionProvider,
   uploadParakeetModel: readString("uploadParakeetModel", ""),
   uploadCloudTranscriptionProvider: readString("uploadCloudTranscriptionProvider", ""),
-  uploadCloudTranscriptionModel: readString("uploadCloudTranscriptionModel", ""),
+  uploadCloudTranscriptionModel: upgradeGrokSttModel(
+    readString("uploadCloudTranscriptionModel", "")
+  ),
   uploadCloudTranscriptionBaseUrl: readString("uploadCloudTranscriptionBaseUrl", ""),
   uploadCloudTranscriptionMode: readString("uploadCloudTranscriptionMode", ""),
 

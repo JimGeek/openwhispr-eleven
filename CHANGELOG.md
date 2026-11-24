@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Transcription
 
+- **OpenRouter Grok STT 2.0, and it stays current.** OpenRouter replaced `x-ai/grok-stt-1.0` with `x-ai/grok-stt-2.0`. The app now asks OpenRouter's public model list which Grok STT models exist and uses the newest, so a future Grok STT is picked up with no update. If a model disappears or fails, it tries the next-newest, and if the list can't be reached it uses the last known list, then 2.0. A saved "Grok STT 1.0" choice moves to 2.0 automatically; any other OpenRouter model you picked is left alone. See `src/helpers/grokStt.js`.
 - **Azure AI Foundry / Azure OpenAI speech-to-text.** The custom transcription provider now recognizes Azure endpoints (`*.cognitiveservices.azure.com`, `*.openai.azure.com`, `*.services.ai.azure.com`) and builds the deployment-style URL Azure requires (`/openai/deployments/{model}/audio/transcriptions?api-version=...`) instead of the plain OpenAI `{base}/audio/transcriptions` shape, which returned `404 DeploymentNotFound`. Auth now uses Azure's `api-key` header on Azure hosts. Enter your resource endpoint as the URL and your exact deployment name in the Model field; `api-version` defaults to a transcribe-capable preview and can be overridden by appending `?api-version=...` to the endpoint.
 
 ## [1.7.3] - 2026-06-23
